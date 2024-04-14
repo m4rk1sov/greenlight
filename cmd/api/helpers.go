@@ -23,10 +23,16 @@ func (app *application) readIDParam(r *http.Request) (int64, error) {
 	return id, nil
 }
 
+// define envelope type
+type envelope map[string]any
+
 // define writeJSON helper for sending responses
-func (app *application) writeJSON(w http.ResponseWriter, status int, data any, headers http.Header) error {
+func (app *application) writeJSON(w http.ResponseWriter, status int, data envelope, headers http.Header) error {
 	// encode the data to JSON
-	js, err := json.Marshal(data)
+	// use the json.MarshalIndent to add whitespace and tab indent
+	// Unfortunately it takes more memory and slower than a regular one
+	// if application relies on high amount of traffic need to switch to original
+	js, err := json.MarshalIndent(data, "", "\t")
 	if err != nil {
 		return err
 	}

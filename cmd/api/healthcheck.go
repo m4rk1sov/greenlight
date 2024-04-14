@@ -8,16 +8,28 @@ import (
 // application status, operating environment and version.
 func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	// create a map which holds the response info
-	data := map[string]string{
-		"status":      "available",
-		"environment": app.config.env,
-		"version":     version,
+	//data := map[string]string{
+	//	"status":      "available",
+	//	"environment": app.config.env,
+	//	"version":     version,
+	//}
+
+	// declare envelop map for data, nested values
+	env := envelope{
+		"status": "available",
+		"system_info": map[string]string{
+			"environment": app.config.env,
+			"version":     version,
+		},
 	}
 
-	err := app.writeJSON(w, http.StatusOK, data, nil)
+	err := app.writeJSON(w, http.StatusOK, env, nil)
 	if err != nil {
-		app.logger.Print(err)
-		http.Error(w, "The server encountered a problem and could not process your request", http.StatusInternalServerError)
+		// use new helper
+		app.serverErrorResponse(w, r, err)
+
+		//app.logger.Print(err)
+		//http.Error(w, "The server encountered a problem and could not process your request", http.StatusInternalServerError)
 	}
 
 	//// append a new line to json, make it easier to read in the terminal
