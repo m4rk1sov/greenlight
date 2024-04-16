@@ -47,9 +47,9 @@ func main() {
 
 	// load .env file from given path
 	// we keep it empty it will load .env from current directory
-	err := godotenv.Load(".env")
+	envLoadErr := godotenv.Load(".env")
 
-	if err != nil {
+	if envLoadErr != nil {
 		log.Fatalf("Error loading .env file")
 	}
 	// getting env variables
