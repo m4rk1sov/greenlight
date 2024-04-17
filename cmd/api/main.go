@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/joho/godotenv"
+	"greenlight.m4rk1sov.github.com/internal/data"
 	"log"
 	"net/http"
 	"os"
@@ -36,9 +37,11 @@ type config struct {
 
 // Define an application struct to hold the dependencies for our HTTP handlers, helpers,
 // and middleware
+// Add a models field to hold our new Models struct.
 type application struct {
 	config config
 	logger *log.Logger
+	models data.Models
 }
 
 func main() {
@@ -93,9 +96,12 @@ func main() {
 	logger.Printf("database connection pool established")
 
 	// Declare an instance of the application struct, containing the config struct
+	// Use the data.NewModels() function to initialize a Models struct, passing in the
+	// connection pool as a parameter.
 	app := &application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
 	}
 
 	// Declare an HTTP server with some sensible timeout settings
