@@ -15,7 +15,9 @@ var (
 // Create a Models struct which wraps the MovieModel. We'll add other models to this,
 // like a UserModel and PermissionModel, as our build progresses.
 type Models struct {
-	Movies MovieModel
+	Movies         MovieModel
+	Module_info    Module_infoModel
+	DepartmentInfo DepartmentInfoModel
 	//// Set the Movies field to be an interface containing the methods that both the
 	//// 'real' model and mock model need to support.
 	//Movies interface {
@@ -31,7 +33,9 @@ type Models struct {
 // the initialized MovieModel.
 func NewModels(db *sql.DB) Models {
 	return Models{
-		Movies: MovieModel{DB: db},
+		Movies:         MovieModel{DB: db},
+		Module_info:    Module_infoModel{DB: db},
+		DepartmentInfo: DepartmentInfoModel{DB: db},
 	}
 }
 

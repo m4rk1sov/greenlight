@@ -28,6 +28,16 @@ func (app *application) routes() *httprouter.Router {
 	router.HandlerFunc(http.MethodPatch, "/v1/movies/:id", app.updateMovieHandler)
 	// Add the route for the DELETE /v1/movies/:id endpoint.
 	router.HandlerFunc(http.MethodDelete, "/v1/movies/:id", app.deleteMovieHandler)
+
+	router.HandlerFunc(http.MethodGet, "/v1/modules", app.listModulesInfoHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/modules", app.createModuleInfoHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/modules/:id", app.getModuleInfoHandler)
+	router.HandlerFunc(http.MethodPatch, "/v1/modules/:id", app.editModuleInfoHandler)
+	router.HandlerFunc(http.MethodDelete, "/v1/modules/:id", app.deleteModuleInfoHandler)
+
+	router.HandlerFunc(http.MethodPost, "/v1/departments", app.createDepartmentInfoHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/departments/:id", app.getDepartmentInfoHandler)
+
 	// return instance
 	return router
 }
