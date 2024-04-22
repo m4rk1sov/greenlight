@@ -5,7 +5,8 @@ import (
 	"net/http"
 )
 
-func (app *application) routes() *httprouter.Router {
+// Update the routes() method to return a http.Handler instead of a *httprouter.Router.
+func (app *application) routes() http.Handler {
 	// router instance
 	router := httprouter.New()
 
@@ -38,6 +39,6 @@ func (app *application) routes() *httprouter.Router {
 	router.HandlerFunc(http.MethodPost, "/v1/departments", app.createDepartmentInfoHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/departments/:id", app.getDepartmentInfoHandler)
 
-	// return instance
-	return router
+	// Wrap the router with the rateLimit() middleware.
+	return app.recoverPanic(app.rateLimit(router))
 }
