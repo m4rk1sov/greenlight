@@ -39,6 +39,9 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPost, "/v1/departments", app.createDepartmentInfoHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/departments/:id", app.getDepartmentInfoHandler)
 
+	// Add the route for the POST /v1/users endpoint.
+	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)
+
 	// Wrap the router with the rateLimit() middleware.
 	return app.recoverPanic(app.rateLimit(router))
 }

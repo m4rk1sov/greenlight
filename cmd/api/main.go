@@ -7,8 +7,10 @@ import (
 	"github.com/joho/godotenv"
 	"greenlight.m4rk1sov.github.com/internal/data"
 	"greenlight.m4rk1sov.github.com/internal/jsonlog"
+	"greenlight.m4rk1sov.github.com/internal/mailer"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	_ "github.com/joho/godotenv"
@@ -40,6 +42,14 @@ type config struct {
 		burst   int
 		enabled bool
 	}
+	// Update the config struct to hold the SMTP server settings.
+	smtp struct {
+		host     string
+		port     int
+		username string
+		password string
+		sender   string
+	}
 }
 
 // Define an application struct to hold the dependencies for our HTTP handlers, helpers,
@@ -48,10 +58,18 @@ type config struct {
 
 // Change the logger field to have the type *jsonlog.Logger, instead of
 // *log.Logger.
+
+// Update the application struct to hold a new Mailer instance.
+
+// Include a sync.WaitGroup in the application struct. The zero-value for a
+// sync.WaitGroup type is a valid, useable, sync.WaitGroup with a 'counter' value of 0,
+// so we don't need to do anything else to initialize it before we can use it.
 type application struct {
 	config config
 	logger *jsonlog.Logger
 	models data.Models
+	mailer mailer.Mailer
+	wg     sync.WaitGroup
 }
 
 func main() {
@@ -66,7 +84,7 @@ func main() {
 		log.Fatalf("Error loading .env file")
 	}
 	// getting env variables
-	dbHost := os.Getenv("ALMAS_DB_DSN")
+	dbHost := os.Getenv("GREENLIGHT_DB_DSN")
 
 	// Read the value of the port and env command-line flags into the config struct. We
 	// default to using the port number 4000 and the environment "development"
@@ -91,6 +109,16 @@ func main() {
 	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2, "Rate limiter maximum requests per second")
 	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "Rate limiter maximum burst")
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
+
+	// Read the SMTP server configuration settings into the config struct, using the
+	// Mailtrap settings as the default values. IMPORTANT: If you're following along,
+	// make sure to replace the default values for smtp-username and smtp-password
+	// with your own Mailtrap credentials.
+	flag.StringVar(&cfg.smtp.host, "smtp-host", "smtp.mailtrap.io", "SMTP host")
+	flag.IntVar(&cfg.smtp.port, "smtp-port", 25, "SMTP port")
+	flag.StringVar(&cfg.smtp.username, "smtp-username", "eb444b7fc1bd66", "SMTP username")
+	flag.StringVar(&cfg.smtp.password, "smtp-password", "397d341a1b10d0", "SMTP password")
+	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Greenlight <no-reply@almasmagzumov.mail.ru>", "SMTP sender")
 
 	flag.Parse()
 
@@ -125,10 +153,13 @@ func main() {
 	// Declare an instance of the application struct, containing the config struct
 	// Use the data.NewModels() function to initialize a Models struct, passing in the
 	// connection pool as a parameter.
+	// Initialize a new Mailer instance using the settings from the command line
+	// flags, and add it to the application struct.
 	app := &application{
 		config: cfg,
 		logger: logger,
 		models: data.NewModels(db),
+		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
 	}
 
 	// Call app.serve() to start the server.

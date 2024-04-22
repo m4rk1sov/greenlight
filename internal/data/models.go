@@ -18,6 +18,7 @@ type Models struct {
 	Movies         MovieModel
 	Module_info    Module_infoModel
 	DepartmentInfo DepartmentInfoModel
+	Users          UserModel // Add a new Users field.
 	//// Set the Movies field to be an interface containing the methods that both the
 	//// 'real' model and mock model need to support.
 	//Movies interface {
@@ -36,6 +37,7 @@ func NewModels(db *sql.DB) Models {
 		Movies:         MovieModel{DB: db},
 		Module_info:    Module_infoModel{DB: db},
 		DepartmentInfo: DepartmentInfoModel{DB: db},
+		Users:          UserModel{DB: db}, // Initialize a new UserModel instance
 	}
 }
 
