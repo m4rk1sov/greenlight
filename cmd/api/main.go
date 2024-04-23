@@ -84,7 +84,7 @@ func main() {
 		log.Fatalf("Error loading .env file")
 	}
 	// getting env variables
-	dbHost := os.Getenv("GREENLIGHT_DB_DSN")
+	dbHost := os.Getenv("ALMAS_DB_DSN")
 
 	// Read the value of the port and env command-line flags into the config struct. We
 	// default to using the port number 4000 and the environment "development"

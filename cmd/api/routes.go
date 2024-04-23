@@ -30,14 +30,21 @@ func (app *application) routes() http.Handler {
 	// Add the route for the DELETE /v1/movies/:id endpoint.
 	router.HandlerFunc(http.MethodDelete, "/v1/movies/:id", app.requirePermission("movies:write", app.deleteMovieHandler))
 
-	router.HandlerFunc(http.MethodGet, "/v1/modules", app.requirePermission("movies:read", app.listModulesInfoHandler))
-	router.HandlerFunc(http.MethodPost, "/v1/modules", app.requirePermission("movies:write", app.createModuleInfoHandler))
-	router.HandlerFunc(http.MethodGet, "/v1/modules/:id", app.requirePermission("movies:read", app.getModuleInfoHandler))
-	router.HandlerFunc(http.MethodPatch, "/v1/modules/:id", app.requirePermission("movies:write", app.editModuleInfoHandler))
-	router.HandlerFunc(http.MethodDelete, "/v1/modules/:id", app.requirePermission("movies:write", app.deleteModuleInfoHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/modules", app.requireRole("user", app.listModulesInfoHandler))
+	router.HandlerFunc(http.MethodPost, "/v1/modules", app.requireRole("admin", app.createModuleInfoHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/modules/:id", app.requireRole("user", app.getModuleInfoHandler))
+	router.HandlerFunc(http.MethodPatch, "/v1/modules/:id", app.requireRole("admin", app.editModuleInfoHandler))
+	router.HandlerFunc(http.MethodDelete, "/v1/modules/:id", app.requireRole("admin", app.deleteModuleInfoHandler))
 
-	router.HandlerFunc(http.MethodPost, "/v1/departments", app.requirePermission("movies:write", app.createDepartmentInfoHandler))
-	router.HandlerFunc(http.MethodGet, "/v1/departments/:id", app.requirePermission("movies:read", app.getDepartmentInfoHandler))
+	router.HandlerFunc(http.MethodPost, "/v1/departments", app.requireRole("admin", app.createDepartmentInfoHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/departments/:id", app.requireRole("user", app.getDepartmentInfoHandler))
+
+	// Add the route for the POST /v1/userinfo endpoint.
+	router.HandlerFunc(http.MethodPost, "/v1/userinfo", app.createUserInfoHandler)
+	// Add the route for the PUT /v1/userinfo/activated endpoint.
+	router.HandlerFunc(http.MethodPut, "/v1/userinfo/activated", app.activateUserInfoHandler)
+	// Add the route for the POST /v1/tokens/authentication endpoint.
+	router.HandlerFunc(http.MethodPost, "/v1/tokens2/authentication", app.createAuthenticationTokenHandler2)
 
 	// Add the route for the POST /v1/users endpoint.
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)
@@ -48,5 +55,7 @@ func (app *application) routes() http.Handler {
 
 	// Wrap the router with the rateLimit() middleware.
 	// Use the authenticate() middleware on all requests.
-	return app.recoverPanic(app.rateLimit(app.authenticate(router)))
+
+	// change to authenticate(router) for book
+	return app.recoverPanic(app.rateLimit(app.authenticate2(router)))
 }

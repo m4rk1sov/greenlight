@@ -21,6 +21,7 @@ type Models struct {
 	Users          UserModel       // Add a new Users field.
 	Tokens         TokenModel      // Add a new Tokens field.
 	Permissions    PermissionModel // Add a new Permissions field.
+	UserInfo       UserInfoModel
 	//// Set the Movies field to be an interface containing the methods that both the
 	//// 'real' model and mock model need to support.
 	//Movies interface {
@@ -42,6 +43,7 @@ func NewModels(db *sql.DB) Models {
 		Users:          UserModel{DB: db},       // Initialize a new UserModel instance
 		Tokens:         TokenModel{DB: db},      // Initialize a new TokenModel instance
 		Permissions:    PermissionModel{DB: db}, // Initialize a new PermissionModel instance
+		UserInfo:       UserInfoModel{DB: db},
 	}
 }
 

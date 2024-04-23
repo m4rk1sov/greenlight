@@ -245,7 +245,7 @@ LIMIT $2 OFFSET $3`, filters.sortColumn(), filters.sortDirection())
 	// values for the placeholders in a slice. Notice here how we call the limit() and
 	// offset() methods on the Filters struct to get the appropriate values for the
 	// LIMIT and OFFSET clauses.
-	args := []any{moduleName, examType, filters.limit(), filters.offset()}
+	args := []any{moduleName, filters.limit(), filters.offset()}
 
 	// And then pass the args slice to QueryContext() as a variadic parameter.
 	rows, err := m.DB.QueryContext(ctx, query, args...)
