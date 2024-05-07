@@ -141,6 +141,18 @@ VALUES ($1, $2, $3, $4, $5)
 	return nil
 }
 
+// GetByID UserInfo by ID
+func (m UserInfoModel) GetByID(id int64) (*UserInfo, error) {
+	// SQL query to fetch user by ID
+	query := `SELECT id, activated, email FROM user_info WHERE id = $1`
+	var user UserInfo
+	err := m.DB.QueryRow(query, id).Scan(&user.ID, &user.Activated, &user.Email)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 // Retrieve the UserInfo details from the database based on the user's email address.
 // Because we have a UNIQUE constraint on the email column, this SQL query will only
 // return one record (or none at all, in which case we return a ErrRecordNotFound error).

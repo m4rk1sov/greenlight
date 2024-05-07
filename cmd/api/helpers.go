@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
+	"greenlight.m4rk1sov.github.com/internal/data"
 	"greenlight.m4rk1sov.github.com/internal/validator"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // retrieve Id convert it to integer and return, otherwise return 0, error
@@ -226,4 +228,48 @@ func (app *application) background(fn func()) {
 		}()
 		fn()
 	}()
+}
+
+func (app *application) scheduleEmailSending(user *data.UserInfo) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			// Fetch the latest user info from the database
+			refreshedUser, err := app.models.UserInfo.GetByID(user.ID)
+			if err != nil {
+				app.logger.PrintError(err, nil)
+				return
+			}
+
+			if refreshedUser.Activated {
+				return // Stop the ticker and goroutine if the user is activated
+			}
+
+			// Delete all existing tokens for user
+			err = app.models.Tokens.DeleteAllForUser(data.ScopeActivation, refreshedUser.ID)
+			if err != nil {
+				app.logger.PrintError(err, nil)
+				return
+			}
+
+			// Generate and send a new activation token
+			token, err := app.models.Tokens.New(refreshedUser.ID, 40*time.Second, data.ScopeActivation)
+			if err != nil {
+				app.logger.PrintError(err, nil)
+				return
+			}
+
+			data := map[string]any{
+				"activationToken": token.Plaintext,
+				"userID":          refreshedUser.ID,
+			}
+			err = app.mailer.Send(refreshedUser.Email, "user_welcome.tmpl", data)
+			if err != nil {
+				app.logger.PrintError(err, nil)
+			}
+		}
+	}
 }

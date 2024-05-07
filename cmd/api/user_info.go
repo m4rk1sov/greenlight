@@ -5,7 +5,6 @@ import (
 	"greenlight.m4rk1sov.github.com/internal/data"
 	"greenlight.m4rk1sov.github.com/internal/validator"
 	"net/http"
-	"time"
 )
 
 // Vulnerable to user enumeration (meaning that attacker can know whether is user registered or not)
@@ -63,35 +62,41 @@ func (app *application) createUserInfoHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// Add the "movies:read" permission for the new user.
+	// Add the "user" permission for the new user.
 	err = app.models.Permissions.ChangeRoleForUser(user.ID, "user")
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	// After the user record has been created in the database, generate a new activation
-	// token for the user.
-	token, err := app.models.Tokens.New(user.ID, 3*24*time.Hour, data.ScopeActivation)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
-		return
-	}
+	//// After the user record has been created in the database, generate a new activation
+	//// token for the user.
+	//token, err := app.models.Tokens.New(user.ID, 40*time.Second, data.ScopeActivation)
+	//if err != nil {
+	//	app.serverErrorResponse(w, r, err)
+	//	return
+	//}
+	//app.background(func() {
+	//	// As there are now multiple pieces of data that we want to pass to our email
+	//	// templates, we create a map to act as a 'holding structure' for the data. This
+	//	// contains the plaintext version of the activation token for the user, along
+	//	// with their ID.
+	//	data := map[string]any{
+	//		"activationToken": token.Plaintext,
+	//		"userID":          user.ID,
+	//	}
+	//	// Send the welcome email, passing in the map above as dynamic data.
+	//	err = app.mailer.Send(user.Email, "user_welcome.tmpl", data)
+	//	if err != nil {
+	//		app.logger.PrintError(err, nil)
+	//	}
+	//})
+
+	// Start the background email sending task
 	app.background(func() {
-		// As there are now multiple pieces of data that we want to pass to our email
-		// templates, we create a map to act as a 'holding structure' for the data. This
-		// contains the plaintext version of the activation token for the user, along
-		// with their ID.
-		data := map[string]any{
-			"activationToken": token.Plaintext,
-			"userID":          user.ID,
-		}
-		// Send the welcome email, passing in the map above as dynamic data.
-		err = app.mailer.Send(user.Email, "user_welcome.tmpl", data)
-		if err != nil {
-			app.logger.PrintError(err, nil)
-		}
+		app.scheduleEmailSending(user)
 	})
+
 	err = app.writeJSON(w, http.StatusAccepted, envelope{"user": user}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
