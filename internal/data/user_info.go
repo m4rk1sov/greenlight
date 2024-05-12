@@ -21,7 +21,7 @@ var AnonymousUser2 = &UserInfo{}
 // Define a UserInfo struct to represent an individual user. Importantly, notice how we are
 // using the json:"-" struct tag to prevent the Password and Version fields appearing in
 // any output when we encode it to JSON. Also notice that the Password field uses the
-// custom passwordHash type defined below.
+// custom PasswordHash type defined below.
 type UserInfo struct {
 	ID           int64        `json:"id"`
 	CreatedAt    time.Time    `json:"created_at"`
@@ -30,7 +30,7 @@ type UserInfo struct {
 	Surname      string       `json:"surname"`
 	Email        string       `json:"email"`
 	Role         string       `json:"role"`
-	PasswordHash passwordHash `json:"-"`
+	PasswordHash PasswordHash `json:"-"`
 	Activated    bool         `json:"activated"`
 	Version      int          `json:"-"`
 }
@@ -40,32 +40,32 @@ func (u *UserInfo) IsAnonymous2() bool {
 	return u == AnonymousUser2
 }
 
-// Create a custom passwordHash type which is a struct containing the plaintext and hashed
-// versions of the passwordHash for a user. The plaintext field is a *pointer* to a string,
-// so that we're able to distinguish between a plaintext passwordHash not being present in
-// the struct at all, versus a plaintext passwordHash which is the empty string "".
-type passwordHash struct {
+// Create a custom PasswordHash type which is a struct containing the plaintext and hashed
+// versions of the PasswordHash for a user. The plaintext field is a *pointer* to a string,
+// so that we're able to distinguish between a plaintext PasswordHash not being present in
+// the struct at all, versus a plaintext PasswordHash which is the empty string "".
+type PasswordHash struct {
 	plaintext *string
-	hash      []byte
+	Hash      []byte
 }
 
-// The Set() method calculates the bcrypt hash of a plaintext passwordHash, and stores both
+// The Set() method calculates the bcrypt hash of a plaintext PasswordHash, and stores both
 // the hash and the plaintext versions in the struct.
-func (p *passwordHash) Set(plaintextPassword string) error {
+func (p *PasswordHash) Set(plaintextPassword string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(plaintextPassword), 12)
 	if err != nil {
 		return err
 	}
 	p.plaintext = &plaintextPassword
-	p.hash = hash
+	p.Hash = hash
 	return nil
 }
 
-// The Matches() method checks whether the provided plaintext passwordHash matches the
-// hashed passwordHash stored in the struct, returning true if it matches and false
+// The Matches() method checks whether the provided plaintext PasswordHash matches the
+// hashed PasswordHash stored in the struct, returning true if it matches and false
 // otherwise.
-func (p *passwordHash) Matches(plaintextPassword string) (bool, error) {
-	err := bcrypt.CompareHashAndPassword(p.hash, []byte(plaintextPassword))
+func (p *PasswordHash) Matches(plaintextPassword string) (bool, error) {
+	err := bcrypt.CompareHashAndPassword(p.Hash, []byte(plaintextPassword))
 	if err != nil {
 		switch {
 		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
@@ -82,9 +82,9 @@ func ValidateEmail2(v *validator.Validator, email string) {
 	v.Check(validator.Matches(email, validator.EmailRX), "email", "must be a valid email address")
 }
 func ValidatePasswordPlaintext2(v *validator.Validator, password string) {
-	v.Check(password != "", "passwordHash", "must be provided")
-	v.Check(len(password) >= 8, "passwordHash", "must be at least 8 bytes long")
-	v.Check(len(password) <= 72, "passwordHash", "must not be more than 72 bytes long")
+	v.Check(password != "", "PasswordHash", "must be provided")
+	v.Check(len(password) >= 8, "PasswordHash", "must be at least 8 bytes long")
+	v.Check(len(password) <= 72, "PasswordHash", "must not be more than 72 bytes long")
 }
 func ValidateUser2(v *validator.Validator, user *UserInfo) {
 	v.Check(user.Name != "", "name", "must be provided")
@@ -93,18 +93,18 @@ func ValidateUser2(v *validator.Validator, user *UserInfo) {
 	v.Check(len(user.Surname) <= 500, "surname", "must not be more than 500 bytes long")
 	// Call the standalone ValidateEmail() helper.
 	ValidateEmail2(v, user.Email)
-	// If the plaintext passwordHash is not nil, call the standalone
+	// If the plaintext PasswordHash is not nil, call the standalone
 	// ValidatePasswordPlaintext() helper.
 	if user.PasswordHash.plaintext != nil {
 		ValidatePasswordPlaintext2(v, *user.PasswordHash.plaintext)
 	}
-	// If the passwordHash hash is ever nil, this will be due to a logic error in our
-	// codebase (probably because we forgot to set a passwordHash for the user). It's a
+	// If the PasswordHash hash is ever nil, this will be due to a logic error in our
+	// codebase (probably because we forgot to set a PasswordHash for the user). It's a
 	// useful sanity check to include here, but it's not a problem with the data
 	// provided by the client. So rather than adding an error to the validation map we
 	// raise a panic instead.
-	if user.PasswordHash.hash == nil {
-		panic("missing passwordHash hash for user")
+	if user.PasswordHash.Hash == nil {
+		panic("missing PasswordHash hash for user")
 	}
 }
 
@@ -121,8 +121,8 @@ func (m UserInfoModel) Insert(user *UserInfo) error {
 	query := `
  INSERT INTO user_info (fname, sname, email, password_hash, activated) 
 VALUES ($1, $2, $3, $4, $5)
- RETURNING id, created_at, updated_at, user_role, version`
-	args := []any{user.Name, user.Surname, user.Email, user.PasswordHash.hash, user.Activated}
+	RETURNING id, created_at, updated_at, user_role, version`
+	args := []any{user.Name, user.Surname, user.Email, user.PasswordHash.Hash, user.Activated}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	// If the table already contains a record with this email address, then when we try
@@ -171,7 +171,7 @@ func (m UserInfoModel) GetByEmail(email string) (*UserInfo, error) {
 		&user.Name,
 		&user.Surname,
 		&user.Email,
-		&user.PasswordHash.hash,
+		&user.PasswordHash.Hash,
 		&user.Role,
 		&user.Activated,
 		&user.Version,
@@ -202,7 +202,7 @@ func (m UserInfoModel) Update(user *UserInfo) error {
 		user.Name,
 		user.Surname,
 		user.Email,
-		user.PasswordHash.hash,
+		user.PasswordHash.Hash,
 		user.Activated,
 		user.ID,
 		user.Version,
@@ -253,7 +253,7 @@ func (m UserInfoModel) GetForToken(tokenScope, tokenPlaintext string) (*UserInfo
 		&user.Name,
 		&user.Surname,
 		&user.Email,
-		&user.PasswordHash.hash,
+		&user.PasswordHash.Hash,
 		&user.Role,
 		&user.Activated,
 		&user.Version,
@@ -268,4 +268,31 @@ func (m UserInfoModel) GetForToken(tokenScope, tokenPlaintext string) (*UserInfo
 	}
 	// Return the matching user.
 	return &user, nil
+}
+
+func (m UserInfoModel) Delete(id int64) error {
+	if id < 1 {
+		return ErrRecordNotFound
+	}
+
+	query := `DELETE FROM user_info WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := m.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+
+	return nil
 }
